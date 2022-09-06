@@ -1,0 +1,8 @@
+[package]
+name = "test"
+version = "0.1.0"
+std = "c++20"
+
+[dependencies]
+fmt = { build = "headers", git = "https://github.com/fmtlib/fmt", tag = "9.1.0" }
+pulsejet = { build = "headers", path = "../pulsejet" }
