@@ -31,7 +31,12 @@ type Map<K, V> = BTreeMap<K, V>;
 
 #[non_exhaustive]
 pub struct EncodeResult {
+    /// Encoded sample stream.
     pub stream: Vec<u8>,
+    /// Total bits estimate for the
+    /// encoded sample. This will typically differ slightly
+    /// from the actual size after compression, but on average
+    /// is accurate enough to be useful.
     pub total_bits_estimate: f64,
 }
 
@@ -42,27 +47,23 @@ pub struct EncodeResult {
 /// relevant pulsejet header(s). See the documentation for `Decode` for
 /// more information.
 ///
-/// @param sampleStream Input sample stream.
-/// @param sampleStreamSize Input sample stream size in samples.
-/// @param sampleRate Input sample rate in samples per second (hz).
-///        pulsejet is designed for 44100hz samples only, and its
-///        psychoacoustics are tuned to that rate. However, other rates
-///        may do something useful/interesting, so this rate is not
-///        enforced, and the encoder will happily try to match a target
-///        bit rate at another sample rate if desired.
-/// @param targetBitRate Target bit rate in kilobits per second (kbps).
-///        There's no enforced lower/upper bound, but due to codec format
-///        details, the resulting bit rate will often plateau around
-///        128kbps (or lower, depending on the material). ~64kbps is
-///        typically transparent, ~32-64kbps is typically high quality.
-///        For anything lower, it depends on the material, but it's not
-///        uncommon for rates <=16kbps to actually be useful. <=0kbps
-///        will usually end up around 2-3kbps.
-/// @param[out] outTotalBitsEstimate Total bits estimate for the
-///             encoded sample. This will typically differ slightly
-///             from the actual size after compression, but on average
-///             is accurate enough to be useful.
-/// @return Encoded sample stream.
+/// # Inputs
+///
+/// - `sample_stream` - Input sample stream.
+/// - `sample_rate` - Input sample rate in samples per second (hz).
+///   pulsejet is designed for 44100hz samples only, and its
+///   psychoacoustics are tuned to that rate. However, other rates
+///   may do something useful/interesting, so this rate is not
+///   enforced, and the encoder will happily try to match a target
+///   bit rate at another sample rate if desired.
+/// - `target_bit_rate` - Target bit rate in kilobits per second (kbps).
+///   There's no enforced lower/upper bound, but due to codec format
+///   details, the resulting bit rate will often plateau around
+///   128kbps (or lower, depending on the material). ~64kbps is
+///   typically transparent, ~32-64kbps is typically high quality.
+///   For anything lower, it depends on the material, but it's not
+///   uncommon for rates <=16kbps to actually be useful. <=0kbps
+///   will usually end up around 2-3kbps.
 pub fn encode<M: CMath>(
     sample_stream: &[f32],
     sample_rate: f64,
@@ -92,7 +93,8 @@ pub fn encode<M: CMath>(
     let num_samples = num_frames * FRAME_SIZE;
     let num_padded_samples = num_samples + FRAME_SIZE * 2;
     let mut padded_samples = vec![0.0f32; num_padded_samples as usize];
-    padded_samples[FRAME_SIZE as usize..][..sample_stream.len()].copy_from_slice(sample_stream);
+    padded_samples[FRAME_SIZE as usize..][..sample_stream.len()]
+        .copy_from_slice(sample_stream);
 
     // Fill padding regions with mirrored frames from the original sample
     for i in 0..FRAME_SIZE {
@@ -318,8 +320,8 @@ pub fn encode<M: CMath>(
             quantized_band_energy_predictions = best_quantized_band_energies;
 
             // Output the best-performing parameters/coefficients to their respective streams
-            band_energy_stream.append(&mut best_band_energy_stream);
-            bin_qstream.append(&mut best_bin_qstream);
+            band_energy_stream.extend(best_band_energy_stream);
+            bin_qstream.extend(best_bin_qstream);
 
             // Adjust slack bits depending on our estimated bits used for this subframe
             slack_bits +=
@@ -331,9 +333,9 @@ pub fn encode<M: CMath>(
     }
 
     // Concatenate streams
-    v.append(&mut window_mode_stream);
+    v.extend(window_mode_stream);
     v.extend(bin_qstream.into_iter().map(|x| x as u8));
-    v.append(&mut band_energy_stream);
+    v.extend(band_energy_stream);
 
     EncodeResult {
         stream: v,
