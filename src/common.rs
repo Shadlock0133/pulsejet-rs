@@ -1,6 +1,6 @@
 #![allow(dead_code)]
 
-use std::f32::consts::{PI, FRAC_PI_2};
+use std::f32::consts::{FRAC_PI_2, PI};
 
 pub const SAMPLE_TAG: [u8; 4] = *b"PLSJ";
 
@@ -10,7 +10,8 @@ pub const CODEC_VERSION_MINOR: u16 = 1;
 pub const FRAME_SIZE: u32 = 1024;
 pub const NUM_SHORT_WINDOWS_PER_FRAME: u32 = 8;
 pub const LONG_WINDOW_SIZE: u32 = FRAME_SIZE * 2;
-pub const SHORT_WINDOW_SIZE: u32 = LONG_WINDOW_SIZE / NUM_SHORT_WINDOWS_PER_FRAME;
+pub const SHORT_WINDOW_SIZE: u32 =
+    LONG_WINDOW_SIZE / NUM_SHORT_WINDOWS_PER_FRAME;
 
 pub const NUM_BANDS: usize = 20;
 pub const NUM_TOTAL_BINS: u32 = 856;
@@ -35,7 +36,8 @@ pub fn vorbis_window(n_plus_half: f32, size: u32) -> f32 {
 pub fn mdct_window(n: u32, size: u32, mode: WindowMode) -> f32 {
     let n_plus_half = (n as f32) + 0.5f32;
     if mode == WindowMode::Start {
-        let short_window_offset = LONG_WINDOW_SIZE * 3 / 4 - SHORT_WINDOW_SIZE / 4;
+        let short_window_offset =
+            LONG_WINDOW_SIZE * 3 / 4 - SHORT_WINDOW_SIZE / 4;
         if n >= short_window_offset + SHORT_WINDOW_SIZE / 2 {
             return 0.0f32;
         } else if n >= short_window_offset {

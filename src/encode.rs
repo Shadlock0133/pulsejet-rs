@@ -86,10 +86,12 @@ pub fn encode<M: CMath>(
         (sample_stream.len() as u32 + FRAME_SIZE - 1) / FRAME_SIZE;
     v.extend_from_slice(&(num_frames as u16).to_le_bytes());
 
-    // We're going to decode one more frame than we output, so adjust the frame count
+    // We're going to decode one more frame than we output, so adjust
+    // the frame count
     num_frames += 1;
 
-    // Allocate internal sample buffer including padding, fill it with silence, and copy input data into it
+    // Allocate internal sample buffer including padding, fill it with silence,
+    // and copy input data into it
     let num_samples = num_frames * FRAME_SIZE;
     let num_padded_samples = num_samples + FRAME_SIZE * 2;
     let mut padded_samples = vec![0.0f32; num_padded_samples as usize];
@@ -121,7 +123,8 @@ pub fn encode<M: CMath>(
     let mut is_transient_frame_map: Vec<bool> = vec![];
     let mut last_frame_energy: f32 = 0.0f32;
     for frame_index in 0..num_frames {
-        // Conceptually, frames are centered around the center of each long window
+        // Conceptually, frames are centered around the center of each
+        // long window
         let frame_offset = FRAME_SIZE / 2 + frame_index * FRAME_SIZE;
         let mut frame_energy: f32 = 0.0f32;
         for i in 0..FRAME_SIZE {
@@ -206,7 +209,8 @@ pub fn encode<M: CMath>(
                 }
             }
 
-            // Search (exhaustively) for an appropriate bin quantization scaling factor
+            // Search (exhaustively) for an appropriate bin quantization
+            // scaling factor
             let mut best_quantized_band_energies: Vec<u8> = vec![];
             let mut best_band_energy_stream: Vec<u8> = vec![];
             let mut best_bin_qstream: Vec<i8> = vec![];
@@ -285,8 +289,11 @@ pub fn encode<M: CMath>(
                     band_bins = &band_bins[num_bins as usize..];
                 }
 
-                // Model the order 0 entropy of the quantized stream symbols in order to estimate the total bits used for encoding
-                //  Also adjust estimate slightly, as squishy (and likely other compressors) tend to find additional correlations not captured by this simple model
+                // Model the order 0 entropy of the quantized stream symbols in
+                // order to estimate the total bits used for encoding.
+                // Also adjust estimate slightly, as squishy (and likely other
+                // compressors) tend to find additional correlations not
+                // captured by this simple model
                 let band_energy_bits_estimate =
                     order0_bits_estimate(&candidate_band_energy_freqs);
                 let bin_qbits_estimate =
@@ -296,7 +303,8 @@ pub fn encode<M: CMath>(
                     + bin_qbits_estimate)
                     * estimate_adjustment;
 
-                // Accept these candidate streams if this bit count estimate is closest to the target for the subframe
+                // Accept these candidate streams if this bit count estimate is
+                // closest to the target for the subframe
                 let target_bits_per_subframe_with_slack_bits =
                     target_bits_per_subframe + slack_bits;
                 if scaling_factor == min_scaling_factor
@@ -319,11 +327,13 @@ pub fn encode<M: CMath>(
             // Update quantized band energy predictions for next subframe
             quantized_band_energy_predictions = best_quantized_band_energies;
 
-            // Output the best-performing parameters/coefficients to their respective streams
+            // Output the best-performing parameters/coefficients to their
+            // respective streams
             band_energy_stream.extend(best_band_energy_stream);
             bin_qstream.extend(best_bin_qstream);
 
-            // Adjust slack bits depending on our estimated bits used for this subframe
+            // Adjust slack bits depending on our estimated bits used for
+            // this subframe
             slack_bits +=
                 target_bits_per_subframe - best_subframe_bits_estimate;
 

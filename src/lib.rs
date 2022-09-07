@@ -1,8 +1,8 @@
+pub mod cmath;
 mod common;
 mod decode;
-pub mod cmath;
 mod encode;
 
+pub use cmath::Std;
 pub use decode::decode;
 pub use encode::encode;
-pub use cmath::Std;

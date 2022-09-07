@@ -37,13 +37,17 @@ pub fn decode<M: CMath>(mut input_stream: &[u8]) -> Vec<f32> {
     // Skip tag and codec version
     input_stream.skip_forward(8);
 
-    // Read frame count, determine number of samples, and allocate output sample buffer
-    let mut num_frames = u16::from_le_bytes(input_stream[..size_of::<u16>()].try_into().unwrap()) as u32;
+    // Read frame count, determine number of samples, and allocate
+    // output sample buffer
+    let mut num_frames = u16::from_le_bytes(
+        input_stream[..size_of::<u16>()].try_into().unwrap(),
+    ) as u32;
     input_stream.skip_forward(size_of::<u16>());
     let num_samples = num_frames * FRAME_SIZE;
     let mut samples = vec![0f32; num_samples as usize];
 
-    // We're going to decode one more frame than we output, so adjust the frame count
+    // We're going to decode one more frame than we output, so adjust
+    // the frame count
     num_frames += 1;
 
     // Set up and skip window mode stream
@@ -107,7 +111,8 @@ pub fn decode<M: CMath>(mut input_stream: &[u8]) -> Vec<f32> {
                     band_bins[bin_index as usize] = bin;
                 }
 
-                // If this band is significantly sparse, fill in (nearly) spectrally flat noise
+                // If this band is significantly sparse, fill in (nearly)
+                // spectrally flat noise
                 let bin_fill = (num_nonzero_bins as f32) / (num_bins as f32);
                 let noise_fill_threshold = 0.1f32;
                 if bin_fill < noise_fill_threshold {
@@ -120,7 +125,8 @@ pub fn decode<M: CMath>(mut input_stream: &[u8]) -> Vec<f32> {
                         band_bins[bin_index as usize] +=
                             noise_sample * noise_fill_gain;
 
-                        // Transition LCG state using Numerical Recipes parameters
+                        // Transition LCG state using
+                        // Numerical Recipes parameters
                         lcg_state = lcg_state
                             .wrapping_mul(1664525)
                             .wrapping_add(1013904223);
@@ -156,7 +162,9 @@ pub fn decode<M: CMath>(mut input_stream: &[u8]) -> Vec<f32> {
                 band_bins = &mut band_bins[num_bins as usize..];
             }
 
-            // Apply the IMDCT to the subframe bins, then apply the appropriate window to the resulting samples, and finally accumulate them into the padded output buffer
+            // Apply the IMDCT to the subframe bins, then apply the appropriate
+            // window to the resulting samples, and finally accumulate them into
+            // the padded output buffer
             let frame_offset = frame_index * FRAME_SIZE;
             let window_offset = subframe_window_offset
                 + subframe_index * subframe_window_size / 2;
