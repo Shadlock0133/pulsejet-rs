@@ -52,7 +52,7 @@ fn main() {
 
     fs::write("encoded_rust.pj", &encoded).unwrap();
 
-    let decoded = unsafe { pulsejet_rs::decode::<Std>(encoded.as_ptr()) };
+    let decoded = pulsejet_rs::decode::<Std>(&encoded);
     let output = BufWriter::new(File::create(opts.output).unwrap());
     let mut writer = WavWriter::new(
         output,

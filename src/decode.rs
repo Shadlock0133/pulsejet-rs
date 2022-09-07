@@ -2,13 +2,13 @@ use std::{f32::consts::PI, mem::size_of};
 
 use crate::{cmath::CMath, common::*};
 
-trait AddPtr {
-    unsafe fn add_ptr(&mut self, offset: usize);
+trait SkipForward {
+    fn skip_forward(&mut self, offset: usize);
 }
 
-impl<T> AddPtr for *const T {
-    unsafe fn add_ptr(&mut self, offset: usize) {
-        *self = self.add(offset);
+impl<T> SkipForward for &[T] {
+    fn skip_forward(&mut self, offset: usize) {
+        *self = &self[offset..];
     }
 }
 
@@ -33,13 +33,13 @@ impl<T> AddPtr for *const T {
 /// # Returns
 ///
 /// Decoded samples in the [-1, 1] range (normalized).
-pub unsafe fn decode<M: CMath>(mut input_stream: *const u8) -> Vec<f32> {
+pub fn decode<M: CMath>(mut input_stream: &[u8]) -> Vec<f32> {
     // Skip tag and codec version
-    input_stream.add_ptr(8);
+    input_stream.skip_forward(8);
 
     // Read frame count, determine number of samples, and allocate output sample buffer
-    let mut num_frames = input_stream.cast::<u16>().read_unaligned() as u32;
-    input_stream.add_ptr(size_of::<u16>());
+    let mut num_frames = u16::from_le_bytes(input_stream[..size_of::<u16>()].try_into().unwrap()) as u32;
+    input_stream.skip_forward(size_of::<u16>());
     let num_samples = num_frames * FRAME_SIZE;
     let mut samples = vec![0f32; num_samples as usize];
 
@@ -48,11 +48,11 @@ pub unsafe fn decode<M: CMath>(mut input_stream: *const u8) -> Vec<f32> {
 
     // Set up and skip window mode stream
     let mut window_mode_stream = input_stream;
-    input_stream.add_ptr(num_frames as usize);
+    input_stream.skip_forward(num_frames as usize);
 
     // Set up and skip quantized band bin stream
-    let mut quantized_band_bin_stream = input_stream.cast::<i8>();
-    input_stream.add_ptr((num_frames * NUM_TOTAL_BINS) as usize);
+    let mut quantized_band_bin_stream = input_stream;
+    input_stream.skip_forward((num_frames * NUM_TOTAL_BINS) as usize);
 
     // Allocate padded sample buffer, and fill with silence
     let num_padded_samples = num_samples + FRAME_SIZE * 2;
@@ -67,14 +67,14 @@ pub unsafe fn decode<M: CMath>(mut input_stream: *const u8) -> Vec<f32> {
     // Decode frames
     for frame_index in 0..num_frames {
         // Read window mode for this frame
-        let window_mode = match window_mode_stream.read() {
+        let window_mode = match window_mode_stream[0] {
             0 => WindowMode::Long,
             1 => WindowMode::Short,
             2 => WindowMode::Start,
             3 => WindowMode::Stop,
             _ => unreachable!(),
         };
-        window_mode_stream.add_ptr(1);
+        window_mode_stream.skip_forward(1);
 
         // Determine subframe configuration from window mode
         let mut num_subframes: u32 = 1;
@@ -98,8 +98,8 @@ pub unsafe fn decode<M: CMath>(mut input_stream: *const u8) -> Vec<f32> {
                     BAND_TO_NUM_BINS[band_index] as u32 / num_subframes;
                 let mut num_nonzero_bins: u32 = 0;
                 for bin_index in 0..num_bins {
-                    let bin_q = quantized_band_bin_stream.read();
-                    quantized_band_bin_stream.add_ptr(1);
+                    let bin_q = quantized_band_bin_stream[0] as i8;
+                    quantized_band_bin_stream.skip_forward(1);
                     if bin_q != 0 {
                         num_nonzero_bins += 1;
                     }
@@ -128,8 +128,8 @@ pub unsafe fn decode<M: CMath>(mut input_stream: *const u8) -> Vec<f32> {
                 }
 
                 // Decode band energy
-                let quantized_band_energy_residual = input_stream.read();
-                input_stream.add_ptr(1);
+                let quantized_band_energy_residual = input_stream[0];
+                input_stream.skip_forward(1);
                 let quantized_band_energy: u8 =
                     quantized_band_energy_predictions[band_index]
                         .wrapping_add(quantized_band_energy_residual);
