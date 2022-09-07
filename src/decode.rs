@@ -19,7 +19,8 @@ impl<T> SkipForward for &[T] {
 /// to have access to all of the required math functions, and instead
 /// implement them by hand. For this reason, this decoder does not
 /// depend on any such functions directly, and instead expects that
-/// `CosF`, `Exp2F`, `SinF`, and `SqrtF` functions are defined a trait.
+/// `cos`, `exp2`, `sin`, and `sqrt` functions are defined using a [`CMath`]
+/// trait. Default implemention is provided through [`Std`](`crate::Std`) type.
 /// pulsejet expects that these functions behave similarly
 /// to the corresponding similarly-named cmath functions. This shim
 /// mechanism can also be used to provide less accurate, speed-optimized
