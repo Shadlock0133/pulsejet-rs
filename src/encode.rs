@@ -33,19 +33,17 @@ type Map<K, V> = BTreeMap<K, V>;
 pub struct EncodeResult {
     /// Encoded sample stream.
     pub stream: Vec<u8>,
-    /// Total bits estimate for the
-    /// encoded sample. This will typically differ slightly
-    /// from the actual size after compression, but on average
+    /// Total bits estimate for the encoded sample. This will typically differ
+    /// slightly from the actual size after compression, but on average
     /// is accurate enough to be useful.
     pub total_bits_estimate: f64,
 }
 
 /// Encodes a raw sample stream into a newly-allocated vector.
 ///
-/// Like `Decode`, this function expects `CosF` and `SinF` to be defined
-/// by the user in the `Pulsejet::Shims` namespace before including the
-/// relevant pulsejet header(s). See the documentation for `Decode` for
-/// more information.
+/// Like [`decode`](`crate::decode()`), this function expects `cos` and `sin` to be defined
+/// by the user through the [`CMath`] trait. See the documentation for
+/// [`decode`](`crate::decode()`) for more information.
 ///
 /// # Inputs
 ///
